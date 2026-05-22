@@ -1,0 +1,82 @@
+.create-header { margin-bottom: 28px; }
+
+.create-card { max-width: 640px; }
+
+.create-form { display: flex; flex-direction: column; gap: 24px; }
+
+.form-group { display: flex; flex-direction: column; }
+
+.char-count {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  text-align: right;
+}
+
+.options-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.vs-divider {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  padding-top: 24px;
+  flex-shrink: 0;
+}
+
+.option-a:focus { border-color: var(--accent); }
+.option-b:focus { border-color: var(--accent2); }
+
+.create-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.not-admin {
+  text-align: center;
+  padding: 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.not-admin-icon { font-size: 3rem; color: var(--border); }
+.not-admin h2 { font-size: 1.5rem; font-weight: 800; }
+.not-admin p { color: var(--text-muted); }
+
+.option-block { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+.odds-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.odds-input {
+  width: 80px !important;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.odds-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.odds-preview {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}

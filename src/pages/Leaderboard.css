@@ -1,0 +1,59 @@
+.lb-header { margin-bottom: 32px; }
+
+.lb-list { display: flex; flex-direction: column; gap: 8px; }
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 24px;
+  transition: all 0.2s;
+}
+.lb-row:hover { border-color: var(--border); transform: translateX(4px); }
+.lb-row.is-me { border-color: var(--accent2); background: rgba(123,94,167,0.08); }
+
+.lb-rank {
+  font-size: 1.4rem;
+  min-width: 40px;
+  text-align: center;
+  line-height: 1;
+}
+.lb-rank .mono { font-size: 0.85rem; color: var(--text-muted); }
+.lb-rank.top-1, .lb-rank.top-2, .lb-rank.top-3 { font-size: 1.5rem; }
+
+.lb-user { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+.lb-username {
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.you-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  background: rgba(123,94,167,0.2);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.lb-preds { font-size: 0.75rem; color: var(--text-muted); }
+
+.lb-stats { display: flex; align-items: center; gap: 24px; }
+
+.lb-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.lb-stat-val { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+.lb-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+
+.lb-points { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.lb-points-val { font-size: 1.1rem; font-weight: 700; }
+.lb-points-val.pos { color: var(--win); }
+.lb-points-val.neg { color: var(--lose); }
