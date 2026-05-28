@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
-import { isAdmin } from '../lib/admin'
 import './QuestionDetail.css'
 
 export default function QuestionDetail() {
@@ -72,29 +71,16 @@ export default function QuestionDetail() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  function getOptionCount(opt) {
-    return predictions.filter(p => p.selected_option === opt).length
-  }
-
   function getOptionPct(opt) {
     if (!predictions.length) return 0
-    return Math.round((getOptionCount(opt) / predictions.length) * 100)
+    const count = predictions.filter(p => p.selected_option === opt).length
+    return Math.round((count / predictions.length) * 100)
   }
 
-  function getOdds(opt) {
-    return opt === 'a' ? question?.odds_a : question?.odds_b
-  }
-
-  function getPotentialWin() {
-    if (!selectedOption) return null
-    const odds = getOdds(selectedOption)
-    return Math.round(stake * odds)
-  }
+  const isCreator = question?.creator_id === user?.id
 
   if (loading) return <div className="page-wrap"><div className="loading-text mono">Loading...</div></div>
   if (!question) return <div className="page-wrap"><p>Question not found.</p></div>
-
-  const adminUser = isAdmin(user)
 
   return (
     <div className="page-wrap">
@@ -115,11 +101,9 @@ export default function QuestionDetail() {
 
         <h2 className="qd-question">{question.question}</h2>
 
-        {/* Options with vote bars */}
         <div className="qd-options">
           {['a','b'].map(opt => {
             const label = opt === 'a' ? question.option_a : question.option_b
-            const odds = getOdds(opt)
             const pct = getOptionPct(opt)
             const isCorrect = question.is_resolved && question.correct_option === opt
             const isUserChoice = userPred?.selected_option === opt
@@ -133,10 +117,7 @@ export default function QuestionDetail() {
                 <div className="qd-option-content">
                   <span className="qd-option-letter">{opt.toUpperCase()}</span>
                   <span className="qd-option-label">{label}</span>
-                  <div className="qd-option-right">
-                    <span className="qd-odds mono">{odds}x</span>
-                    <span className="qd-option-pct mono">{pct}%</span>
-                  </div>
+                  <span className="qd-option-pct mono">{pct}%</span>
                 </div>
                 {isCorrect && <span className="correct-badge">✓ Correct</span>}
                 {isUserChoice && !question.is_resolved && <span className="your-pick-badge">Your pick</span>}
@@ -145,7 +126,6 @@ export default function QuestionDetail() {
           })}
         </div>
 
-        {/* Predict form */}
         {!userPred && !question.is_resolved && (
           <div className="predict-section">
             <div className="stake-row">
@@ -158,8 +138,8 @@ export default function QuestionDetail() {
             </div>
             <p className="stake-hint mono">
               {selectedOption
-                ? `Win → +${getPotentialWin()} pts · Lose → −${stake} pts`
-                : 'Select an option above to see potential payout'}
+                ? `Correct → +${stake} pts · Wrong → −${stake} pts`
+                : 'Select an option above first'}
             </p>
             {predError && <p className="error-msg">{predError}</p>}
             <button className="btn-primary" onClick={handlePredict} disabled={submitting || !selectedOption} style={{marginTop:'12px'}}>
@@ -168,7 +148,6 @@ export default function QuestionDetail() {
           </div>
         )}
 
-        {/* User's prediction result */}
         {userPred && (
           <div className={`user-result ${userPred.points_result === null ? 'pending' : userPred.points_result >= 0 ? 'win' : 'lose'}`}>
             <span className="user-result-label">Your Prediction</span>
@@ -177,16 +156,15 @@ export default function QuestionDetail() {
             </span>
             <span className="user-result-points mono">
               {userPred.points_result === null
-                ? `Staked ${userPred.stake} · Awaiting result`
+                ? `Staked ${userPred.stake} pts · Awaiting result`
                 : `${userPred.points_result > 0 ? '+' : ''}${userPred.points_result} pts`}
             </span>
           </div>
         )}
 
-        {/* Resolve section for admin only */}
-        {adminUser && !question.is_resolved && (
+        {isCreator && !question.is_resolved && (
           <div className="resolve-section">
-            <p className="label">Mark the correct answer:</p>
+            <p className="label">You created this — mark the correct answer:</p>
             <div className="resolve-btns">
               <button className="resolve-opt-btn" onClick={() => handleResolve('a')} disabled={resolving}>
                 ✓ {question.option_a}
@@ -199,7 +177,6 @@ export default function QuestionDetail() {
         )}
       </div>
 
-      {/* Predictions list */}
       {predictions.length > 0 && (
         <div className="preds-section">
           <h3 className="preds-title">
@@ -212,9 +189,7 @@ export default function QuestionDetail() {
                 <span className="pred-choice">
                   {p.selected_option === 'a' ? question.option_a : question.option_b}
                 </span>
-                <span className="pred-stake mono">
-                  stake {p.stake} · {p.selected_option === 'a' ? question.odds_a : question.odds_b}x
-                </span>
+                <span className="pred-stake mono">stake {p.stake}</span>
                 {p.points_result !== null && (
                   <span className={`pred-result mono ${p.points_result >= 0 ? 'win' : 'lose'}`}>
                     {p.points_result > 0 ? '+' : ''}{p.points_result}

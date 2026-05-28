@@ -2,46 +2,24 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
-import { isAdmin } from '../lib/admin'
 import './CreateQuestion.css'
 
 export default function CreateQuestion() {
   const [question, setQuestion] = useState('')
   const [optionA, setOptionA] = useState('')
   const [optionB, setOptionB] = useState('')
-  const [oddsA, setOddsA] = useState('')
-  const [oddsB, setOddsB] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  if (!isAdmin(user)) {
-    return (
-      <div className="page-wrap">
-        <div className="not-admin">
-          <span className="not-admin-icon">⬡</span>
-          <h2>Oracles only.</h2>
-          <p className="mono">Only the admin can create questions.</p>
-          <button className="btn-ghost" onClick={() => navigate('/')} style={{marginTop:'16px'}}>← Back</button>
-        </div>
-      </div>
-    )
-  }
-
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    const parsedA = parseFloat(oddsA)
-    const parsedB = parseFloat(oddsB)
-
     if (!question.trim() || !optionA.trim() || !optionB.trim()) {
-      setError('All fields are required.'); return
+      setError('All fields are required.')
+      return
     }
-    if (isNaN(parsedA) || parsedA <= 0 || isNaN(parsedB) || parsedB <= 0) {
-      setError('Odds must be positive numbers (e.g. 1.5 or 3).'); return
-    }
-
     setLoading(true)
     const { data, error: err } = await supabase
       .from('questions')
@@ -49,13 +27,10 @@ export default function CreateQuestion() {
         question: question.trim(),
         option_a: optionA.trim(),
         option_b: optionB.trim(),
-        odds_a: parsedA,
-        odds_b: parsedB,
         creator_id: user.id
       })
       .select()
       .single()
-
     if (err) { setError(err.message); setLoading(false); return }
     navigate(`/question/${data.id}`)
   }
@@ -64,7 +39,14 @@ export default function CreateQuestion() {
     <div className="page-wrap">
       <div className="create-header">
         <h2 className="page-title">New Question</h2>
-        <p className="page-sub mono">Set the stage. Define the odds.</p>
+        <p className="page-sub mono">Set the stage. Let your friends predict.</p>
+      </div>
+
+      <div className="create-tip">
+        <span className="tip-icon">💡</span>
+        <p>
+          <strong>Make it a real contest.</strong> The best questions are ones where both outcomes feel genuinely possible — not a clear favourite vs. a long shot. If everyone already knows the answer, there's no fun in predicting. Aim for options that could each win on a given day.
+        </p>
       </div>
 
       <div className="card create-card">
@@ -83,7 +65,7 @@ export default function CreateQuestion() {
           </div>
 
           <div className="options-row">
-            <div className="option-block">
+            <div className="form-group" style={{flex:1}}>
               <label className="label">Option A</label>
               <input
                 className="input-field option-a"
@@ -93,24 +75,9 @@ export default function CreateQuestion() {
                 onChange={e => setOptionA(e.target.value)}
                 maxLength={80}
               />
-              <div className="odds-row">
-                <label className="label" style={{marginBottom:0}}>Odds</label>
-                <input
-                  className="input-field odds-input"
-                  type="number"
-                  placeholder="e.g. 1.5"
-                  step="0.1"
-                  min="0.1"
-                  value={oddsA}
-                  onChange={e => setOddsA(e.target.value)}
-                />
-                <span className="odds-hint mono">× stake if wins</span>
-              </div>
             </div>
-
             <div className="vs-divider">VS</div>
-
-            <div className="option-block">
+            <div className="form-group" style={{flex:1}}>
               <label className="label">Option B</label>
               <input
                 className="input-field option-b"
@@ -120,28 +87,7 @@ export default function CreateQuestion() {
                 onChange={e => setOptionB(e.target.value)}
                 maxLength={80}
               />
-              <div className="odds-row">
-                <label className="label" style={{marginBottom:0}}>Odds</label>
-                <input
-                  className="input-field odds-input"
-                  type="number"
-                  placeholder="e.g. 3"
-                  step="0.1"
-                  min="0.1"
-                  value={oddsB}
-                  onChange={e => setOddsB(e.target.value)}
-                />
-                <span className="odds-hint mono">× stake if wins</span>
-              </div>
             </div>
-          </div>
-
-          <div className="odds-preview">
-            <span className="label" style={{marginBottom:0}}>Example payout</span>
-            <span className="mono" style={{color:'var(--text-muted)', fontSize:'0.82rem'}}>
-              Stake 5 on A → {oddsA ? `+${Math.round(5 * parseFloat(oddsA)) || '?'}` : '?'} pts win / −5 pts lose &nbsp;·&nbsp;
-              Stake 5 on B → {oddsB ? `+${Math.round(5 * parseFloat(oddsB)) || '?'}` : '?'} pts win / −5 pts lose
-            </span>
           </div>
 
           {error && <p className="error-msg">{error}</p>}

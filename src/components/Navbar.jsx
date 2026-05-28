@@ -1,7 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
-import { isAdmin } from '../lib/admin'
 import './Navbar.css'
 
 export default function Navbar() {
@@ -26,9 +25,7 @@ export default function Navbar() {
           <div className="navbar-links">
             <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>Questions</Link>
             <Link to="/leaderboard" className={`nav-link ${location.pathname === '/leaderboard' ? 'active' : ''}`}>Leaderboard</Link>
-            {isAdmin(user) && (
-              <Link to="/create" className="btn-primary" style={{padding: '8px 20px', fontSize: '0.8rem'}}>+ New</Link>
-            )}
+            <Link to="/create" className="btn-primary" style={{padding: '8px 20px', fontSize: '0.8rem'}}>+ New</Link>
             <div className="nav-profile">
               <span className="nav-username mono">@{profile?.username}</span>
               <span className="nav-points">
