@@ -143,7 +143,7 @@ export default function QuestionDetail() {
             </p>
             {predError && <p className="error-msg">{predError}</p>}
             <button className="btn-primary" onClick={handlePredict} disabled={submitting || !selectedOption} style={{marginTop:'12px'}}>
-              {submitting ? 'Locking in...' : 'Lock Prediction'}
+              {submitting ? 'Saving...' : 'Save Prediction'}
             </button>
           </div>
         )}
