@@ -21,7 +21,7 @@
   text-align: center;
   line-height: 1;
 }
-.lb-rank .mono { font-size: 0.85rem; color: var(--text-muted); }
+.lb-rank .mono { font-size: 0.85rem; color: var(--text); }
 .lb-rank.top-1, .lb-rank.top-2, .lb-rank.top-3 { font-size: 1.5rem; }
 
 .lb-user { flex: 1; display: flex; flex-direction: column; gap: 4px; }
@@ -45,13 +45,13 @@
   border-radius: 20px;
 }
 
-.lb-preds { font-size: 0.75rem; color: var(--text-muted); }
+.lb-preds { font-size: 0.75rem; color: var(--text); }
 
 .lb-stats { display: flex; align-items: center; gap: 24px; }
 
 .lb-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .lb-stat-val { font-size: 0.95rem; font-weight: 600; color: var(--text); }
-.lb-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+.lb-stat-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text); }
 
 .lb-points { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .lb-points-val { font-size: 1.1rem; font-weight: 700; }

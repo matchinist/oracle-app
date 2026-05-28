@@ -47,7 +47,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text);
   padding: 6px 12px;
   border-radius: 8px;
   transition: color 0.2s;
@@ -66,7 +66,7 @@
 
 .nav-username {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text);
 }
 
 .nav-points {
@@ -77,4 +77,4 @@
 
 .points-pos { color: var(--win); font-weight: 700; font-size: 0.95rem; font-family: 'DM Mono', monospace; }
 .points-neg { color: var(--lose); font-weight: 700; font-size: 0.95rem; font-family: 'DM Mono', monospace; }
-.points-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.points-label { font-size: 0.7rem; color: var(--text); text-transform: uppercase; letter-spacing: 0.05em; }

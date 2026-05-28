@@ -31,13 +31,13 @@ export default function Leaderboard() {
     return u.predictions?.length || 0
   }
 
-  if (loading) return <div className="page-wrap"><div className="loading-text mono">Loading leaderboard...</div></div>
+  if (loading) return <div className="page-wrap"><div className="loading-text mono">Yükleniyor...</div></div>
 
   return (
     <div className="page-wrap">
       <div className="lb-header">
-        <h2 className="page-title">Leaderboard</h2>
-        <p className="page-sub mono">Who sees the future best?</p>
+        <h2 className="page-title">Sıralama</h2>
+        <p className="page-sub mono">Geleceği en iyi kim görüyor?</p>
       </div>
 
       <div className="lb-list">
@@ -52,37 +52,34 @@ export default function Leaderboard() {
               <div className={`lb-rank ${rank <= 3 ? `top-${rank}` : ''}`}>
                 {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : <span className="mono">#{rank}</span>}
               </div>
-
               <div className="lb-user">
                 <span className="lb-username">
                   {u.username}
-                  {isMe && <span className="you-badge">you</span>}
+                  {isMe && <span className="you-badge">sen</span>}
                 </span>
-                <span className="lb-preds mono">{totalPreds} prediction{totalPreds !== 1 ? 's' : ''}</span>
+                <span className="lb-preds mono">{totalPreds} tahmin</span>
               </div>
-
               <div className="lb-stats">
                 {accuracy !== null && (
                   <div className="lb-stat">
                     <span className="lb-stat-val mono">{accuracy}%</span>
-                    <span className="lb-stat-label">accuracy</span>
+                    <span className="lb-stat-label">isabet</span>
                   </div>
                 )}
                 <div className="lb-points">
                   <span className={`lb-points-val mono ${u.total_points >= 0 ? 'pos' : 'neg'}`}>
                     {u.total_points > 0 ? '+' : ''}{u.total_points}
                   </span>
-                  <span className="lb-stat-label">points</span>
+                  <span className="lb-stat-label">puan</span>
                 </div>
               </div>
             </div>
           )
         })}
-
         {users.length === 0 && (
           <div className="empty-state">
             <span className="empty-icon">⬡</span>
-            <p>No oracles yet. Be the first.</p>
+            <p>Henüz oracle yok. İlk sen ol.</p>
           </div>
         )}
       </div>

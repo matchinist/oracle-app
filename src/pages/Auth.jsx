@@ -40,53 +40,32 @@ export default function Auth() {
         <div className="auth-logo">
           <span className="auth-logo-icon">⬡</span>
           <h1 className="auth-title">ORACLE</h1>
-          <p className="auth-subtitle">Predict. Stake. Prove you know.</p>
+          <p className="auth-subtitle">Tahmin et. Bahse gir. Haklı olduğunu kanıtla.</p>
         </div>
 
         <div className="auth-tabs">
-          <button className={`auth-tab ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError('') }}>Sign In</button>
-          <button className={`auth-tab ${mode === 'signup' ? 'active' : ''}`} onClick={() => { setMode('signup'); setError('') }}>Sign Up</button>
+          <button className={`auth-tab ${mode === 'login' ? 'active' : ''}`} onClick={() => { setMode('login'); setError('') }}>Giriş Yap</button>
+          <button className={`auth-tab ${mode === 'signup' ? 'active' : ''}`} onClick={() => { setMode('signup'); setError('') }}>Kayıt Ol</button>
         </div>
 
         <form onSubmit={handleSubmit} className="auth-form">
           {mode === 'signup' && (
             <div className="form-group">
-              <label className="label">Username</label>
-              <input
-                className="input-field"
-                type="text"
-                placeholder="your_handle"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                required
-              />
+              <label className="label">Kullanıcı Adı</label>
+              <input className="input-field" type="text" placeholder="kullanici_adi" value={username} onChange={e => setUsername(e.target.value)} required />
             </div>
           )}
           <div className="form-group">
-            <label className="label">Email</label>
-            <input
-              className="input-field"
-              type="email"
-              placeholder="you@example.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
+            <label className="label">E-posta</label>
+            <input className="input-field" type="email" placeholder="sen@ornek.com" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           <div className="form-group">
-            <label className="label">Password</label>
-            <input
-              className="input-field"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
+            <label className="label">Şifre</label>
+            <input className="input-field" type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required />
           </div>
           {error && <p className="error-msg">{error}</p>}
           <button className="btn-primary" type="submit" disabled={loading} style={{width:'100%', marginTop: '8px'}}>
-            {loading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Create Account'}
+            {loading ? 'Yükleniyor...' : mode === 'login' ? 'Giriş Yap' : 'Hesap Oluştur'}
           </button>
         </form>
       </div>

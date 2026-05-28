@@ -8,7 +8,7 @@
   --accent: #c8f135;
   --accent2: #7b5ea7;
   --text: #e8e8f0;
-  --text-muted: #6b6b80;
+  --text-muted: #9b9bb0;
   --danger: #ff4d6d;
   --win: #c8f135;
   --lose: #ff4d6d;
@@ -48,7 +48,7 @@ input, textarea, select { font-family: 'DM Mono', monospace; outline: none; }
 
 .btn-ghost {
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text);
   font-weight: 600;
   font-size: 0.85rem;
   letter-spacing: 0.05em;
@@ -58,7 +58,7 @@ input, textarea, select { font-family: 'DM Mono', monospace; outline: none; }
   border: 1px solid var(--border);
   transition: all 0.2s;
 }
-.btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text); }
 
 .btn-danger {
   background: transparent;
@@ -99,7 +99,7 @@ input, textarea, select { font-family: 'DM Mono', monospace; outline: none; }
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--text);
   margin-bottom: 8px;
   display: block;
 }

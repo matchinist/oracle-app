@@ -4,6 +4,13 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import './QuestionDetail.css'
 
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleString('tr-TR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+}
+
 export default function QuestionDetail() {
   const { id } = useParams()
   const { user, fetchProfile } = useAuth()
@@ -13,6 +20,7 @@ export default function QuestionDetail() {
   const [predictions, setPredictions] = useState([])
   const [userPred, setUserPred] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
 
   const [selectedOption, setSelectedOption] = useState(null)
   const [stake, setStake] = useState(5)
@@ -39,21 +47,38 @@ export default function QuestionDetail() {
 
     setQuestion(q)
     setPredictions(preds || [])
-    setUserPred(preds?.find(p => p.user_id === user?.id) || null)
+    const myPred = preds?.find(p => p.user_id === user?.id) || null
+    setUserPred(myPred)
+    if (myPred) {
+      setSelectedOption(myPred.selected_option)
+      setStake(myPred.stake)
+    }
     setLoading(false)
   }
 
   async function handlePredict() {
-    if (!selectedOption) { setPredError('Pick an option first.'); return }
+    if (!selectedOption) { setPredError('Bir seçenek seçin.'); return }
     setSubmitting(true)
     setPredError('')
-    const { error } = await supabase.from('predictions').insert({
-      question_id: id,
-      user_id: user.id,
-      selected_option: selectedOption,
-      stake,
-    })
-    if (error) { setPredError(error.message); setSubmitting(false); return }
+
+    if (editing && userPred) {
+      // Update existing prediction
+      const { error } = await supabase
+        .from('predictions')
+        .update({ selected_option: selectedOption, stake })
+        .eq('id', userPred.id)
+      if (error) { setPredError(error.message); setSubmitting(false); return }
+      setEditing(false)
+    } else {
+      const { error } = await supabase.from('predictions').insert({
+        question_id: id,
+        user_id: user.id,
+        selected_option: selectedOption,
+        stake,
+      })
+      if (error) { setPredError(error.message); setSubmitting(false); return }
+    }
+
     await fetchData()
     setSubmitting(false)
   }
@@ -78,28 +103,41 @@ export default function QuestionDetail() {
   }
 
   const isCreator = question?.creator_id === user?.id
+  const isLocked = question?.lock_date && new Date() > new Date(question.lock_date)
+  const canPredict = !question?.is_resolved && !isLocked
+  const showPredictForm = canPredict && (!userPred || editing)
 
-  if (loading) return <div className="page-wrap"><div className="loading-text mono">Loading...</div></div>
-  if (!question) return <div className="page-wrap"><p>Question not found.</p></div>
+  if (loading) return <div className="page-wrap"><div className="loading-text mono">Yükleniyor...</div></div>
+  if (!question) return <div className="page-wrap"><p>Soru bulunamadı.</p></div>
 
   return (
     <div className="page-wrap">
-      <button className="back-btn mono" onClick={() => navigate('/')}>← Back</button>
+      <button className="back-btn mono" onClick={() => navigate('/')}>← Geri</button>
 
       <div className="qd-card card">
         <div className="qd-top">
           <div className="qd-meta">
-            <span className="mono" style={{color:'var(--text-muted)', fontSize:'0.8rem'}}>by @{question.profiles?.username}</span>
-            <span className={`qcard-status ${question.is_resolved ? 'resolved' : 'open'}`}>
-              {question.is_resolved ? '✓ Resolved' : '● Open'}
+            <span className="mono" style={{color:'var(--text-muted)', fontSize:'0.8rem'}}>@{question.profiles?.username} tarafından</span>
+            <span className={`qcard-status ${question.is_resolved ? 'resolved' : isLocked ? 'locked' : 'open'}`}>
+              {question.is_resolved ? '✓ Sonuçlandı' : isLocked ? '🔒 Kilitlendi' : '● Açık'}
             </span>
           </div>
           <button className="share-btn" onClick={handleShare}>
-            {copied ? '✓ Copied!' : '⎘ Share Link'}
+            {copied ? '✓ Kopyalandı!' : '⎘ Bağlantıyı Paylaş'}
           </button>
         </div>
 
         <h2 className="qd-question">{question.question}</h2>
+
+        {question.lock_date && (
+          <div className="lock-info mono">
+            {question.is_resolved
+              ? `✓ Sonuçlandı · Kilitlenme: ${formatDate(question.lock_date)}`
+              : isLocked
+              ? `🔒 Tahminler kapandı · ${formatDate(question.lock_date)}`
+              : `⏱ Tahminler ${formatDate(question.lock_date)} tarihinde kapanır`}
+          </div>
+        )}
 
         <div className="qd-options">
           {['a','b'].map(opt => {
@@ -107,11 +145,12 @@ export default function QuestionDetail() {
             const pct = getOptionPct(opt)
             const isCorrect = question.is_resolved && question.correct_option === opt
             const isUserChoice = userPred?.selected_option === opt
+            const isSelected = selectedOption === opt
             return (
               <div
                 key={opt}
-                className={`qd-option ${isCorrect ? 'correct' : ''} ${isUserChoice ? 'user-choice' : ''} ${!userPred && !question.is_resolved ? 'selectable' : ''} ${selectedOption === opt ? 'selected' : ''}`}
-                onClick={() => { if (!userPred && !question.is_resolved) setSelectedOption(opt) }}
+                className={`qd-option ${isCorrect ? 'correct' : ''} ${isUserChoice && !editing ? 'user-choice' : ''} ${showPredictForm ? 'selectable' : ''} ${isSelected && showPredictForm ? 'selected' : ''}`}
+                onClick={() => { if (showPredictForm) setSelectedOption(opt) }}
               >
                 <div className="qd-option-bar" style={{width: `${pct}%`}} />
                 <div className="qd-option-content">
@@ -119,17 +158,17 @@ export default function QuestionDetail() {
                   <span className="qd-option-label">{label}</span>
                   <span className="qd-option-pct mono">{pct}%</span>
                 </div>
-                {isCorrect && <span className="correct-badge">✓ Correct</span>}
-                {isUserChoice && !question.is_resolved && <span className="your-pick-badge">Your pick</span>}
+                {isCorrect && <span className="correct-badge">✓ Doğru</span>}
               </div>
             )
           })}
         </div>
 
-        {!userPred && !question.is_resolved && (
+        {/* Predict / Edit form */}
+        {showPredictForm && (
           <div className="predict-section">
             <div className="stake-row">
-              <label className="label">Stake (1–10)</label>
+              <label className="label">Bahis (1–10)</label>
               <div className="stake-controls">
                 <button className="stake-btn" onClick={() => setStake(s => Math.max(1, s-1))}>−</button>
                 <span className="stake-val mono">{stake}</span>
@@ -138,33 +177,53 @@ export default function QuestionDetail() {
             </div>
             <p className="stake-hint mono">
               {selectedOption
-                ? `Correct → +${stake} pts · Wrong → −${stake} pts`
-                : 'Select an option above first'}
+                ? `Doğru → +${stake} puan · Yanlış → −${stake} puan`
+                : 'Önce bir seçenek seçin'}
             </p>
             {predError && <p className="error-msg">{predError}</p>}
-            <button className="btn-primary" onClick={handlePredict} disabled={submitting || !selectedOption} style={{marginTop:'12px'}}>
-              {submitting ? 'Saving...' : 'Save Prediction'}
-            </button>
+            <div style={{display:'flex', gap:'10px', marginTop:'12px'}}>
+              <button className="btn-primary" onClick={handlePredict} disabled={submitting || !selectedOption}>
+                {submitting ? 'Kaydediliyor...' : editing ? 'Tahmini Güncelle' : 'Tahmini Kaydet'}
+              </button>
+              {editing && (
+                <button className="btn-ghost" onClick={() => { setEditing(false); setSelectedOption(userPred.selected_option); setStake(userPred.stake) }}>
+                  İptal
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        {userPred && (
+        {/* User's existing prediction */}
+        {userPred && !editing && (
           <div className={`user-result ${userPred.points_result === null ? 'pending' : userPred.points_result >= 0 ? 'win' : 'lose'}`}>
-            <span className="user-result-label">Your Prediction</span>
-            <span className="user-result-choice">
-              {userPred.selected_option === 'a' ? question.option_a : question.option_b}
-            </span>
-            <span className="user-result-points mono">
-              {userPred.points_result === null
-                ? `Staked ${userPred.stake} pts · Awaiting result`
-                : `${userPred.points_result > 0 ? '+' : ''}${userPred.points_result} pts`}
-            </span>
+            <div className="user-result-left">
+              <span className="user-result-label">Tahmininiz</span>
+              <span className="user-result-choice">
+                {userPred.selected_option === 'a' ? question.option_a : question.option_b}
+              </span>
+              <span className="user-result-points mono">
+                {userPred.points_result === null
+                  ? `Bahis: ${userPred.stake} puan · Sonuç bekleniyor`
+                  : `${userPred.points_result > 0 ? '+' : ''}${userPred.points_result} puan`}
+              </span>
+            </div>
+            {canPredict && (
+              <button className="btn-ghost" style={{fontSize:'0.75rem', padding:'6px 14px'}} onClick={() => setEditing(true)}>
+                Değiştir
+              </button>
+            )}
           </div>
         )}
 
+        {!userPred && isLocked && !question.is_resolved && (
+          <div className="locked-msg">Bu soru için tahmin süresi doldu.</div>
+        )}
+
+        {/* Resolve section for creator */}
         {isCreator && !question.is_resolved && (
           <div className="resolve-section">
-            <p className="label">You created this — mark the correct answer:</p>
+            <p className="label">Doğru cevabı işaretle:</p>
             <div className="resolve-btns">
               <button className="resolve-opt-btn" onClick={() => handleResolve('a')} disabled={resolving}>
                 ✓ {question.option_a}
@@ -177,24 +236,29 @@ export default function QuestionDetail() {
         )}
       </div>
 
+      {/* Predictions table */}
       {predictions.length > 0 && (
         <div className="preds-section">
-          <h3 className="preds-title">
-            {predictions.length} Prediction{predictions.length !== 1 ? 's' : ''}
-          </h3>
-          <div className="preds-list">
+          <h3 className="preds-title">{predictions.length} Tahmin</h3>
+          <div className="preds-table">
+            <div className="preds-table-header">
+              <span>Kullanıcı</span>
+              <span>Tahmin</span>
+              <span>Bahis</span>
+              <span>Tarih</span>
+              <span>Sonuç</span>
+            </div>
             {predictions.map(p => (
               <div key={p.id} className="pred-row">
                 <span className="pred-user mono">@{p.profiles?.username}</span>
                 <span className="pred-choice">
                   {p.selected_option === 'a' ? question.option_a : question.option_b}
                 </span>
-                <span className="pred-stake mono">stake {p.stake}</span>
-                {p.points_result !== null && (
-                  <span className={`pred-result mono ${p.points_result >= 0 ? 'win' : 'lose'}`}>
-                    {p.points_result > 0 ? '+' : ''}{p.points_result}
-                  </span>
-                )}
+                <span className="pred-stake mono">{p.stake}</span>
+                <span className="pred-date mono">{formatDate(p.created_at)}</span>
+                <span className={`pred-result mono ${p.points_result === null ? '' : p.points_result >= 0 ? 'win' : 'lose'}`}>
+                  {p.points_result === null ? '—' : `${p.points_result > 0 ? '+' : ''}${p.points_result}`}
+                </span>
               </div>
             ))}
           </div>
