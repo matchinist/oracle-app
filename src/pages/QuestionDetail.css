@@ -382,3 +382,113 @@
   color: var(--danger);
   font-family: 'DM Mono', monospace;
 }
+
+/* Detail Tabs */
+.detail-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 20px 0 0 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.detail-tab {
+  padding: 8px 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.2s;
+  cursor: pointer;
+  border-radius: 0;
+}
+.detail-tab:hover { color: var(--text); }
+.detail-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.detail-tab.admin-tab { color: var(--accent2); }
+.detail-tab.admin-tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+/* Admin Tab */
+.admin-tab-content { padding-top: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+.admin-section {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.admin-section-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.admin-danger { border-color: rgba(255,77,109,0.2); }
+
+.delete-warn {
+  font-size: 0.85rem;
+  color: var(--danger);
+  font-family: 'DM Mono', monospace;
+}
+
+/* Tahmin tab content spacing */
+.qd-options { margin-top: 20px; }
+
+/* Detail Tabs */
+.detail-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 20px 0 0 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+
+.detail-tab {
+  padding: 8px 20px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+.detail-tab:hover { color: var(--text); }
+.detail-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.detail-tab.admin-tab { color: var(--accent2); }
+.detail-tab.admin-tab.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+
+.qd-options { margin-top: 20px; }
+
+/* Admin Tab */
+.admin-tab-content { padding-top: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+.admin-section {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.admin-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.admin-delete { border-color: rgba(255,77,109,0.2); }

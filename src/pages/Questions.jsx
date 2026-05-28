@@ -14,6 +14,7 @@ function formatDate(dateStr) {
 export default function Questions() {
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState('all')
   const { user } = useAuth()
 
   useEffect(() => { fetchQuestions() }, [])
@@ -39,27 +40,42 @@ export default function Questions() {
     return q.lock_date && new Date() > new Date(q.lock_date)
   }
 
+  const myQuestions = questions.filter(q => q.creator_id === user?.id)
+  const displayed = tab === 'mine' ? myQuestions : questions
+
   if (loading) return <div className="page-wrap"><div className="loading-text mono">Yükleniyor...</div></div>
 
   return (
     <div className="page-wrap">
       <div className="questions-header">
         <div>
-          <h2 className="page-title">Tüm Sorular</h2>
+          <h2 className="page-title">Sorular</h2>
           <p className="page-sub mono">{questions.length} soru arenada</p>
         </div>
         <Link to="/create" className="btn-primary">+ Yeni Soru</Link>
       </div>
 
-      {questions.length === 0 ? (
+      <div className="questions-tabs">
+        <button className={`q-tab ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
+          Tüm Sorular <span className="q-tab-count">{questions.length}</span>
+        </button>
+        <button
+          className={`q-tab ${tab === 'mine' ? 'active' : ''} ${myQuestions.length === 0 ? 'disabled' : ''}`}
+          onClick={() => myQuestions.length > 0 && setTab('mine')}
+        >
+          Sorularım <span className="q-tab-count">{myQuestions.length}</span>
+        </button>
+      </div>
+
+      {displayed.length === 0 ? (
         <div className="empty-state">
           <span className="empty-icon">⬡</span>
-          <p>Henüz soru yok. İlk oracle sen ol.</p>
-          <Link to="/create" className="btn-primary" style={{marginTop: '16px', display:'inline-block'}}>Soru Oluştur</Link>
+          <p>{tab === 'mine' ? 'Henüz soru oluşturmadınız.' : 'Henüz soru yok. İlk oracle sen ol.'}</p>
+          {tab === 'mine' && <Link to="/create" className="btn-primary" style={{marginTop: '16px', display:'inline-block'}}>Soru Oluştur</Link>}
         </div>
       ) : (
         <div className="questions-list">
-          {questions.map(q => {
+          {displayed.map(q => {
             const userPred = getUserPrediction(q)
             const predCount = getPredictionCount(q)
             const locked = isLocked(q)
@@ -91,9 +107,7 @@ export default function Questions() {
                 </div>
 
                 <div className="qcard-footer">
-                  <span className="mono" style={{fontSize:'0.8rem'}}>
-                    {predCount} tahmin
-                  </span>
+                  <span className="mono" style={{fontSize:'0.8rem'}}>{predCount} tahmin</span>
                   {q.lock_date && (
                     <span className="qcard-lockdate mono">
                       {locked || q.is_resolved ? `Kilitlendi: ${formatDate(q.lock_date)}` : `⏱ ${formatDate(q.lock_date)}'de kapanır`}

@@ -21,6 +21,7 @@ export default function QuestionDetail() {
   const [userPred, setUserPred] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [activeTab, setActiveTab] = useState('tahmin')
 
   const [selectedOption, setSelectedOption] = useState(null)
   const [stake, setStake] = useState(5)
@@ -80,19 +81,11 @@ export default function QuestionDetail() {
 
   async function handleDelete() {
     setDeleting(true)
-    // First reverse any points that were awarded
-    if (question.is_resolved) {
-      const { data: preds } = await supabase.from('predictions').select('user_id, points_result').eq('question_id', id)
-      for (const p of preds || []) {
-        if (p.points_result !== null) {
-          await supabase.from('profiles').update({ total_points: supabase.rpc('total_points - ' + p.points_result) }).eq('id', p.user_id)
-        }
-      }
-    }
-    // Delete predictions then question
-    await supabase.from('predictions').delete().eq('question_id', id)
-    await supabase.from('questions').delete().eq('id', id)
-    window.location.href = window.location.origin + '/oracle-app/'
+    const { error: predErr } = await supabase.from('predictions').delete().eq('question_id', id)
+    if (predErr) { console.error(predErr); setDeleting(false); return }
+    const { error: qErr } = await supabase.from('questions').delete().eq('id', id)
+    if (qErr) { console.error(qErr); setDeleting(false); return }
+    navigate('/')
   }
 
   function handleShare() {
@@ -145,100 +138,119 @@ export default function QuestionDetail() {
           </div>
         )}
 
-        <div className="qd-options">
-          {['a','b'].map(opt => {
-            const label = opt === 'a' ? question.option_a : question.option_b
-            const pct = getOptionPct(opt)
-            const isCorrect = question.is_resolved && question.correct_option === opt
-            const isUserChoice = userPred?.selected_option === opt
-            return (
-              <div
-                key={opt}
-                className={`qd-option ${isCorrect ? 'correct' : ''} ${isUserChoice && !editing ? 'user-choice' : ''} ${showPredictForm ? 'selectable' : ''} ${selectedOption === opt && showPredictForm ? 'selected' : ''}`}
-                onClick={() => { if (showPredictForm) setSelectedOption(opt) }}
-              >
-                <div className="qd-option-bar" style={{width: `${pct}%`}} />
-                <div className="qd-option-content">
-                  <span className="qd-option-letter">{opt.toUpperCase()}</span>
-                  <span className="qd-option-label">{label}</span>
-                  <span className="qd-option-pct mono">{pct}%</span>
-                </div>
-                {isCorrect && <span className="correct-badge">✓ Doğru</span>}
-              </div>
-            )
-          })}
+        {/* Tabs */}
+        <div className="detail-tabs">
+          <button className={`detail-tab ${activeTab === 'tahmin' ? 'active' : ''}`} onClick={() => setActiveTab('tahmin')}>
+            Tahmin
+          </button>
+          {isCreator && (
+            <button className={`detail-tab admin-tab ${activeTab === 'admin' ? 'active' : ''}`} onClick={() => setActiveTab('admin')}>
+              Admin
+            </button>
+          )}
         </div>
 
-        {/* Predict / Edit form */}
-        {showPredictForm && (
-          <div className="predict-section">
-            <div className="stake-row">
-              <label className="label">Bahis (1–10)</label>
-              <div className="stake-controls">
-                <button className="stake-btn" onClick={() => setStake(s => Math.max(1, s-1))}>−</button>
-                <span className="stake-val mono">{stake}</span>
-                <button className="stake-btn" onClick={() => setStake(s => Math.min(10, s+1))}>+</button>
+        {/* TAHMİN TAB */}
+        {activeTab === 'tahmin' && (
+          <>
+            <div className="qd-options">
+              {['a','b'].map(opt => {
+                const label = opt === 'a' ? question.option_a : question.option_b
+                const pct = getOptionPct(opt)
+                const isCorrect = question.is_resolved && question.correct_option === opt
+                const isUserChoice = userPred?.selected_option === opt
+                return (
+                  <div
+                    key={opt}
+                    className={`qd-option ${isCorrect ? 'correct' : ''} ${isUserChoice && !editing ? 'user-choice' : ''} ${showPredictForm ? 'selectable' : ''} ${selectedOption === opt && showPredictForm ? 'selected' : ''}`}
+                    onClick={() => { if (showPredictForm) setSelectedOption(opt) }}
+                  >
+                    <div className="qd-option-bar" style={{width: `${pct}%`}} />
+                    <div className="qd-option-content">
+                      <span className="qd-option-letter">{opt.toUpperCase()}</span>
+                      <span className="qd-option-label">{label}</span>
+                      <span className="qd-option-pct mono">{pct}%</span>
+                    </div>
+                    {isCorrect && <span className="correct-badge">✓ Doğru</span>}
+                  </div>
+                )
+              })}
+            </div>
+
+            {showPredictForm && (
+              <div className="predict-section">
+                <div className="stake-row">
+                  <label className="label">Bahis (1–10)</label>
+                  <div className="stake-controls">
+                    <button className="stake-btn" onClick={() => setStake(s => Math.max(1, s-1))}>−</button>
+                    <span className="stake-val mono">{stake}</span>
+                    <button className="stake-btn" onClick={() => setStake(s => Math.min(10, s+1))}>+</button>
+                  </div>
+                </div>
+                <p className="stake-hint mono">
+                  {selectedOption ? `Doğru → +${stake} puan · Yanlış → −${stake} puan` : 'Önce bir seçenek seçin'}
+                </p>
+                {predError && <p className="error-msg">{predError}</p>}
+                <div style={{display:'flex', gap:'10px', marginTop:'12px'}}>
+                  <button className="btn-primary" onClick={handlePredict} disabled={submitting || !selectedOption}>
+                    {submitting ? 'Kaydediliyor...' : editing ? 'Tahmini Güncelle' : 'Tahmini Kaydet'}
+                  </button>
+                  {editing && (
+                    <button className="btn-ghost" onClick={() => { setEditing(false); setSelectedOption(userPred.selected_option); setStake(userPred.stake) }}>İptal</button>
+                  )}
+                </div>
               </div>
-            </div>
-            <p className="stake-hint mono">
-              {selectedOption ? `Doğru → +${stake} puan · Yanlış → −${stake} puan` : 'Önce bir seçenek seçin'}
-            </p>
-            {predError && <p className="error-msg">{predError}</p>}
-            <div style={{display:'flex', gap:'10px', marginTop:'12px'}}>
-              <button className="btn-primary" onClick={handlePredict} disabled={submitting || !selectedOption}>
-                {submitting ? 'Kaydediliyor...' : editing ? 'Tahmini Güncelle' : 'Tahmini Kaydet'}
-              </button>
-              {editing && (
-                <button className="btn-ghost" onClick={() => { setEditing(false); setSelectedOption(userPred.selected_option); setStake(userPred.stake) }}>İptal</button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* User's existing prediction */}
-        {userPred && !editing && (
-          <div className={`user-result ${userPred.points_result === null ? 'pending' : userPred.points_result >= 0 ? 'win' : 'lose'}`}>
-            <div className="user-result-left">
-              <span className="user-result-label">Tahmininiz</span>
-              <span className="user-result-choice">{userPred.selected_option === 'a' ? question.option_a : question.option_b}</span>
-              <span className="user-result-points mono">
-                {userPred.points_result === null ? `Bahis: ${userPred.stake} puan · Sonuç bekleniyor` : `${userPred.points_result > 0 ? '+' : ''}${userPred.points_result} puan`}
-              </span>
-            </div>
-            {canPredict && (
-              <button className="btn-ghost" style={{fontSize:'0.75rem', padding:'6px 14px'}} onClick={() => setEditing(true)}>Değiştir</button>
             )}
-          </div>
+
+            {userPred && !editing && (
+              <div className={`user-result ${userPred.points_result === null ? 'pending' : userPred.points_result >= 0 ? 'win' : 'lose'}`}>
+                <div className="user-result-left">
+                  <span className="user-result-label">Tahmininiz</span>
+                  <span className="user-result-choice">{userPred.selected_option === 'a' ? question.option_a : question.option_b}</span>
+                  <span className="user-result-points mono">
+                    {userPred.points_result === null ? `Bahis: ${userPred.stake} puan · Sonuç bekleniyor` : `${userPred.points_result > 0 ? '+' : ''}${userPred.points_result} puan`}
+                  </span>
+                </div>
+                {canPredict && (
+                  <button className="btn-ghost" style={{fontSize:'0.75rem', padding:'6px 14px'}} onClick={() => setEditing(true)}>Değiştir</button>
+                )}
+              </div>
+            )}
+
+            {!userPred && isLocked && !question.is_resolved && (
+              <div className="locked-msg">Bu soru için tahmin süresi doldu.</div>
+            )}
+          </>
         )}
 
-        {!userPred && isLocked && !question.is_resolved && (
-          <div className="locked-msg">Bu soru için tahmin süresi doldu.</div>
-        )}
-
-        {/* CREATOR ZONE — clearly separated */}
-        {isCreator && (
-          <div className="creator-zone">
-            <div className="creator-zone-header">
-              <span className="creator-zone-label">👤 Soru Sahibi Paneli</span>
-            </div>
-
+        {/* ADMİN TAB */}
+        {activeTab === 'admin' && isCreator && (
+          <div className="admin-tab-content">
             {!question.is_resolved && (
-              <div className="resolve-section">
+              <div className="admin-section">
+                <h4 className="admin-section-title">✓ Doğru Cevabı İşaretle</h4>
                 <p className="resolve-hint">⚠️ Doğru cevabı yalnızca sonuç kesinleştikten sonra işaretleyin. Bu işlem tüm tahminleri puanlandırır ve geri alınamaz.</p>
-                <p className="label" style={{marginTop:'12px'}}>Doğru cevabı seç:</p>
-                <div className="resolve-btns">
+                <div className="resolve-btns" style={{marginTop:'14px'}}>
                   <button className="resolve-opt-btn" onClick={() => handleResolve('a')} disabled={resolving}>✓ {question.option_a}</button>
                   <button className="resolve-opt-btn" onClick={() => handleResolve('b')} disabled={resolving}>✓ {question.option_b}</button>
                 </div>
               </div>
             )}
 
-            <div className="delete-section">
+            {question.is_resolved && (
+              <div className="admin-section">
+                <p className="resolve-hint" style={{color:'var(--accent)'}}>✓ Bu soru sonuçlandırıldı. Doğru cevap: <strong>{question.correct_option === 'a' ? question.option_a : question.option_b}</strong></p>
+              </div>
+            )}
+
+            <div className="admin-section admin-delete">
+              <h4 className="admin-section-title">🗑 Soruyu Sil</h4>
+              <p style={{fontSize:'0.85rem', color:'var(--text-muted)', marginBottom:'12px'}}>Bu soru ve tüm tahminler kalıcı olarak silinir.</p>
               {!confirmDelete ? (
-                <button className="btn-danger" onClick={() => setConfirmDelete(true)}>🗑 Soruyu Sil</button>
+                <button className="btn-danger" onClick={() => setConfirmDelete(true)}>Soruyu Sil</button>
               ) : (
                 <div className="delete-confirm">
-                  <p className="delete-warn">Bu soru ve tüm tahminler silinecek. Bu işlem geri alınamaz.</p>
+                  <p className="delete-warn">Emin misiniz? Bu işlem geri alınamaz.</p>
                   <div style={{display:'flex', gap:'10px', marginTop:'12px'}}>
                     <button className="btn-danger" onClick={handleDelete} disabled={deleting}>
                       {deleting ? 'Siliniyor...' : 'Evet, Sil'}
