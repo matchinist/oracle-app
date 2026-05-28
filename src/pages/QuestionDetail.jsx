@@ -89,10 +89,10 @@ export default function QuestionDetail() {
         }
       }
     }
-    // Delete predictions then question (cascade should handle it but let's be explicit)
+    // Delete predictions then question
     await supabase.from('predictions').delete().eq('question_id', id)
     await supabase.from('questions').delete().eq('id', id)
-    navigate('/')
+    window.location.href = window.location.origin + '/oracle-app/'
   }
 
   function handleShare() {
