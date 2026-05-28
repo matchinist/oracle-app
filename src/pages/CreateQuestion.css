@@ -62,3 +62,25 @@
   color: var(--text-muted);
   margin-top: 6px;
 }
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.category-btn {
+  padding: 10px 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+.category-btn:hover { border-color: var(--accent2); }
+.category-btn.active { border-color: var(--accent); background: rgba(200,241,53,0.08); color: var(--accent); }

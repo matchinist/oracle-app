@@ -4,11 +4,21 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import './CreateQuestion.css'
 
+const CATEGORIES = [
+  { value: 'spor', label: '⚽ Spor' },
+  { value: 'politika', label: '🏛️ Politika' },
+  { value: 'ekonomi', label: '📈 Ekonomi' },
+  { value: 'eglence', label: '🎬 Eğlence' },
+  { value: 'teknoloji', label: '💻 Teknoloji' },
+  { value: 'diger', label: '🌐 Diğer' },
+]
+
 export default function CreateQuestion() {
   const [question, setQuestion] = useState('')
   const [optionA, setOptionA] = useState('')
   const [optionB, setOptionB] = useState('')
   const [lockDate, setLockDate] = useState('')
+  const [category, setCategory] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
@@ -22,6 +32,9 @@ export default function CreateQuestion() {
     if (!question.trim() || !optionA.trim() || !optionB.trim()) {
       setError('Tüm alanlar zorunludur.'); return
     }
+    if (!category) {
+      setError('Lütfen bir kategori seçin.'); return
+    }
     if (!lockDate) {
       setError('Lütfen bir kilit tarihi belirleyin.'); return
     }
@@ -33,6 +46,7 @@ export default function CreateQuestion() {
         option_a: optionA.trim(),
         option_b: optionB.trim(),
         lock_date: new Date(lockDate).toISOString(),
+        category,
         creator_id: user.id
       })
       .select()
@@ -57,6 +71,23 @@ export default function CreateQuestion() {
 
       <div className="card create-card">
         <form onSubmit={handleSubmit} className="create-form">
+
+          <div className="form-group">
+            <label className="label">Kategori</label>
+            <div className="category-grid">
+              {CATEGORIES.map(cat => (
+                <button
+                  key={cat.value}
+                  type="button"
+                  className={`category-btn ${category === cat.value ? 'active' : ''}`}
+                  onClick={() => setCategory(cat.value)}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="form-group">
             <label className="label">Soru</label>
             <input

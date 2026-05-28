@@ -68,6 +68,7 @@ export default function Questions() {
                 <div className="qcard-top">
                   <div className="qcard-meta">
                     <span className="qcard-author mono">@{q.profiles?.username}</span>
+                    {q.category && <span className="qcard-category">{q.category}</span>}
                     <span className={`qcard-status ${q.is_resolved ? 'resolved' : locked ? 'locked' : 'open'}`}>
                       {q.is_resolved ? '✓ Sonuçlandı' : locked ? '🔒 Kilitlendi' : '● Açık'}
                     </span>
