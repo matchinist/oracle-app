@@ -16,10 +16,12 @@ const CATEGORIES = [
 
 export default function CreateQuestion() {
   const [question, setQuestion] = useState('')
-  const [optionA, setOptionA] = useState('')
-  const [optionB, setOptionB] = useState('')
-  const [lockDate, setLockDate] = useState('')
   const [category, setCategory] = useState('')
+  const [lockDate, setLockDate] = useState('')
+  const [options, setOptions] = useState([
+    { label: '', odds: '' },
+    { label: '', odds: '' },
+  ])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
@@ -40,47 +42,71 @@ export default function CreateQuestion() {
     )
   }
 
+  function updateOption(index, field, value) {
+    setOptions(opts => opts.map((o, i) => i === index ? { ...o, [field]: value } : o))
+  }
+
+  function addOption() {
+    setOptions(opts => [...opts, { label: '', odds: '' }])
+  }
+
+  function removeOption(index) {
+    if (options.length <= 2) return
+    setOptions(opts => opts.filter((_, i) => i !== index))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    if (!question.trim() || !optionA.trim() || !optionB.trim()) {
-      setError('Tüm alanlar zorunludur.'); return
+
+    if (!question.trim()) { setError('Soru alanı zorunludur.'); return }
+    if (!category) { setError('Lütfen bir kategori seçin.'); return }
+    if (!lockDate) { setError('Lütfen bir kilit tarihi belirleyin.'); return }
+
+    for (let i = 0; i < options.length; i++) {
+      if (!options[i].label.trim()) { setError(`Seçenek ${i + 1} boş bırakılamaz.`); return }
+      const odds = parseFloat(options[i].odds)
+      if (isNaN(odds) || odds <= 0) { setError(`Seçenek ${i + 1} için geçerli bir oran girin (örn. 1.5).`); return }
     }
-    if (!category) {
-      setError('Lütfen bir kategori seçin.'); return
-    }
-    if (!lockDate) {
-      setError('Lütfen bir kilit tarihi belirleyin.'); return
-    }
+
     setLoading(true)
-    const { data, error: err } = await supabase
+
+    const { data: q, error: qErr } = await supabase
       .from('questions')
       .insert({
         question: question.trim(),
-        option_a: optionA.trim(),
-        option_b: optionB.trim(),
-        lock_date: new Date(lockDate).toISOString(),
         category,
+        lock_date: new Date(lockDate).toISOString(),
         creator_id: user.id
       })
       .select()
       .single()
-    if (err) { setError(err.message); setLoading(false); return }
-    navigate(`/question/${data.id}`)
+
+    if (qErr) { setError(qErr.message); setLoading(false); return }
+
+    const optionRows = options.map((o, i) => ({
+      question_id: q.id,
+      label: o.label.trim(),
+      odds: parseFloat(o.odds),
+      order_index: i,
+    }))
+
+    const { error: optErr } = await supabase.from('question_options').insert(optionRows)
+    if (optErr) { setError(optErr.message); setLoading(false); return }
+
+    navigate(`/question/${q.id}`)
   }
 
   return (
     <div className="page-wrap">
       <div className="create-header">
         <h2 className="page-title">Yeni Soru</h2>
-        <p className="page-sub mono">Sahneyi kur. Arkadaşların tahmin etsin.</p>
+        <p className="page-sub mono">Sahneyi kur. Kullanıcılar tahmin etsin.</p>
       </div>
 
       <div className="create-tip">
         <span className="tip-icon">💡</span>
-        <p>
-          <strong>Gerçek bir yarışma yap.</strong> En iyi sorular, her iki sonucun da gerçekten mümkün göründüğü sorulardır. Cevabı herkes zaten biliyorsa tahmin etmekte eğlence kalmaz. Her gün kazanabilecek seçenekler bul.
-        </p>
+        <p><strong>Gerçek bir yarışma yap.</strong> Her seçeneğin gerçekten kazanma şansı olsun. Oranlar seçeneğin zorluk derecesini yansıtmalı — favoriler düşük oran, sürprizler yüksek oran alır.</p>
       </div>
 
       <div className="card create-card">
@@ -90,12 +116,9 @@ export default function CreateQuestion() {
             <label className="label">Kategori</label>
             <div className="category-grid">
               {CATEGORIES.map(cat => (
-                <button
-                  key={cat.value}
-                  type="button"
+                <button key={cat.value} type="button"
                   className={`category-btn ${category === cat.value ? 'active' : ''}`}
-                  onClick={() => setCategory(cat.value)}
-                >
+                  onClick={() => setCategory(cat.value)}>
                   {cat.label}
                 </button>
               ))}
@@ -104,27 +127,46 @@ export default function CreateQuestion() {
 
           <div className="form-group">
             <label className="label">Soru</label>
-            <input
-              className="input-field"
-              type="text"
+            <input className="input-field" type="text"
               placeholder="Bu gece AoE maçını kim kazanır?"
-              value={question}
-              onChange={e => setQuestion(e.target.value)}
-              maxLength={200}
-            />
+              value={question} onChange={e => setQuestion(e.target.value)} maxLength={200} />
             <span className="char-count mono">{question.length}/200</span>
           </div>
 
-          <div className="options-row">
-            <div className="form-group" style={{flex:1}}>
-              <label className="label">Seçenek A</label>
-              <input className="input-field option-a" type="text" placeholder="Birinci sonuç" value={optionA} onChange={e => setOptionA(e.target.value)} maxLength={80} />
+          <div className="form-group">
+            <label className="label">Seçenekler ve Oranlar</label>
+            <div className="options-list">
+              {options.map((opt, i) => (
+                <div key={i} className="option-row">
+                  <span className="option-index mono">{i + 1}</span>
+                  <input
+                    className="input-field option-label"
+                    type="text"
+                    placeholder={`Seçenek ${i + 1}`}
+                    value={opt.label}
+                    onChange={e => updateOption(i, 'label', e.target.value)}
+                    maxLength={80}
+                  />
+                  <div className="odds-input-wrap">
+                    <input
+                      className="input-field odds-field"
+                      type="number"
+                      placeholder="2.0"
+                      step="0.1"
+                      min="1"
+                      value={opt.odds}
+                      onChange={e => updateOption(i, 'odds', e.target.value)}
+                    />
+                    <span className="odds-x">×</span>
+                  </div>
+                  {options.length > 2 && (
+                    <button type="button" className="remove-option-btn" onClick={() => removeOption(i)}>✕</button>
+                  )}
+                </div>
+              ))}
             </div>
-            <div className="vs-divider">VS</div>
-            <div className="form-group" style={{flex:1}}>
-              <label className="label">Seçenek B</label>
-              <input className="input-field option-b" type="text" placeholder="İkinci sonuç" value={optionB} onChange={e => setOptionB(e.target.value)} maxLength={80} />
-            </div>
+            <button type="button" className="add-option-btn" onClick={addOption}>+ Seçenek Ekle</button>
+            <span className="field-hint mono">Doğru tahmin: bahis × oran puan · Yanlış tahmin: −bahis puan</span>
           </div>
 
           <div className="form-group">

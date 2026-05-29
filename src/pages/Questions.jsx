@@ -22,7 +22,7 @@ export default function Questions() {
   async function fetchQuestions() {
     const { data } = await supabase
       .from('questions')
-      .select(`*, predictions(id, user_id, selected_option, stake, points_result)`)
+      .select(`*, question_options(id, label, odds, order_index), predictions(id, user_id, selected_option, stake, points_result)`)
       .order('created_at', { ascending: false })
     setQuestions(data || [])
     setLoading(false)
@@ -34,6 +34,10 @@ export default function Questions() {
 
   function isLocked(q) {
     return q.lock_date && new Date() > new Date(q.lock_date)
+  }
+
+  function getCorrectLabel(q) {
+    return q.question_options?.find(o => o.id === q.correct_option)?.label
   }
 
   if (loading) return <div className="page-wrap"><div className="loading-text mono">Yükleniyor...</div></div>
@@ -59,6 +63,7 @@ export default function Questions() {
             const userPred = getUserPrediction(q)
             const predCount = q.predictions?.length || 0
             const locked = isLocked(q)
+            const sortedOptions = [...(q.question_options || [])].sort((a, b) => a.order_index - b.order_index)
             return (
               <Link to={`/question/${q.id}`} key={q.id} className="question-card">
                 <div className="qcard-top">
@@ -80,9 +85,11 @@ export default function Questions() {
                 <h3 className="qcard-question">{q.question}</h3>
 
                 <div className="qcard-options">
-                  <span className={`qcard-option ${q.is_resolved && q.correct_option === 'a' ? 'correct' : ''}`}>A: {q.option_a}</span>
-                  <span className="qcard-vs">vs</span>
-                  <span className={`qcard-option ${q.is_resolved && q.correct_option === 'b' ? 'correct' : ''}`}>B: {q.option_b}</span>
+                  {sortedOptions.map((opt, i) => (
+                    <span key={opt.id} className={`qcard-option ${q.is_resolved && q.correct_option === opt.id ? 'correct' : ''}`}>
+                      {opt.label} <span className="qcard-odds mono">{opt.odds}×</span>
+                    </span>
+                  ))}
                 </div>
 
                 <div className="qcard-footer">

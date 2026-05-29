@@ -84,3 +84,72 @@
 }
 .category-btn:hover { border-color: var(--accent2); }
 .category-btn.active { border-color: var(--accent); background: rgba(200,241,53,0.08); color: var(--accent); }
+
+.options-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+
+.option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.option-index {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  width: 18px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.option-label { flex: 1; }
+
+.odds-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.odds-field {
+  width: 72px !important;
+  text-align: center;
+}
+
+.odds-x {
+  font-size: 0.85rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.remove-option-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--danger);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.remove-option-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+.add-option-btn {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  width: 100%;
+  transition: all 0.2s;
+  margin-bottom: 10px;
+}
+.add-option-btn:hover { border-color: var(--accent); color: var(--accent); }

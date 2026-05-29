@@ -224,3 +224,9 @@
   border-radius: 10px;
 }
 .q-tab.active .q-tab-count { background: rgba(0,0,0,0.15); }
+
+.qcard-odds {
+  font-size: 0.7rem;
+  color: var(--accent);
+  margin-left: 3px;
+}
