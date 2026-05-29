@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import { isAdmin } from '../lib/admin'
 import './CreateQuestion.css'
 
 const CATEGORIES = [
@@ -25,6 +26,19 @@ export default function CreateQuestion() {
   const navigate = useNavigate()
 
   const minDate = new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)
+
+  if (!isAdmin(user)) {
+    return (
+      <div className="page-wrap">
+        <div className="not-admin">
+          <span className="not-admin-icon">⬡</span>
+          <h2>Yalnızca yönetici.</h2>
+          <p className="mono">Soru oluşturma yetkisi sadece adminde.</p>
+          <button className="btn-ghost" onClick={() => navigate('/')} style={{marginTop:'16px'}}>← Geri</button>
+        </div>
+      </div>
+    )
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()

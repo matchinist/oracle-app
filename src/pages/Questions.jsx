@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
+import { isAdmin } from '../lib/admin'
 import './Questions.css'
 
 function formatDate(dateStr) {
@@ -14,7 +15,6 @@ function formatDate(dateStr) {
 export default function Questions() {
   const [questions, setQuestions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('all')
   const { user } = useAuth()
 
   useEffect(() => { fetchQuestions() }, [])
@@ -22,7 +22,7 @@ export default function Questions() {
   async function fetchQuestions() {
     const { data } = await supabase
       .from('questions')
-      .select(`*, profiles(username), predictions(id, user_id, selected_option, stake, points_result)`)
+      .select(`*, predictions(id, user_id, selected_option, stake, points_result)`)
       .order('created_at', { ascending: false })
     setQuestions(data || [])
     setLoading(false)
@@ -32,16 +32,9 @@ export default function Questions() {
     return q.predictions?.find(p => p.user_id === user?.id)
   }
 
-  function getPredictionCount(q) {
-    return q.predictions?.length || 0
-  }
-
   function isLocked(q) {
     return q.lock_date && new Date() > new Date(q.lock_date)
   }
-
-  const myQuestions = questions.filter(q => q.creator_id === user?.id)
-  const displayed = tab === 'mine' ? myQuestions : questions
 
   if (loading) return <div className="page-wrap"><div className="loading-text mono">Yükleniyor...</div></div>
 
@@ -52,38 +45,24 @@ export default function Questions() {
           <h2 className="page-title">Sorular</h2>
           <p className="page-sub mono">{questions.length} soru arenada</p>
         </div>
-        <Link to="/create" className="btn-primary">+ Yeni Soru</Link>
+        {isAdmin(user) && <Link to="/create" className="btn-primary">+ Yeni Soru</Link>}
       </div>
 
-      <div className="questions-tabs">
-        <button className={`q-tab ${tab === 'all' ? 'active' : ''}`} onClick={() => setTab('all')}>
-          Tüm Sorular <span className="q-tab-count">{questions.length}</span>
-        </button>
-        <button
-          className={`q-tab ${tab === 'mine' ? 'active' : ''} ${myQuestions.length === 0 ? 'disabled' : ''}`}
-          onClick={() => myQuestions.length > 0 && setTab('mine')}
-        >
-          Sorularım <span className="q-tab-count">{myQuestions.length}</span>
-        </button>
-      </div>
-
-      {displayed.length === 0 ? (
+      {questions.length === 0 ? (
         <div className="empty-state">
           <span className="empty-icon">⬡</span>
-          <p>{tab === 'mine' ? 'Henüz soru oluşturmadınız.' : 'Henüz soru yok. İlk oracle sen ol.'}</p>
-          {tab === 'mine' && <Link to="/create" className="btn-primary" style={{marginTop: '16px', display:'inline-block'}}>Soru Oluştur</Link>}
+          <p>Henüz soru yok.</p>
         </div>
       ) : (
         <div className="questions-list">
-          {displayed.map(q => {
+          {questions.map(q => {
             const userPred = getUserPrediction(q)
-            const predCount = getPredictionCount(q)
+            const predCount = q.predictions?.length || 0
             const locked = isLocked(q)
             return (
               <Link to={`/question/${q.id}`} key={q.id} className="question-card">
                 <div className="qcard-top">
                   <div className="qcard-meta">
-                    <span className="qcard-author mono">@{q.profiles?.username}</span>
                     {q.category && <span className="qcard-category">{q.category}</span>}
                     <span className={`qcard-status ${q.is_resolved ? 'resolved' : locked ? 'locked' : 'open'}`}>
                       {q.is_resolved ? '✓ Sonuçlandı' : locked ? '🔒 Kilitlendi' : '● Açık'}
