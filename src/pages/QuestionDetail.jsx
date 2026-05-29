@@ -81,6 +81,16 @@ export default function QuestionDetail() {
 
   async function handleDelete() {
     setDeleting(true)
+
+    // Reverse points for resolved predictions before deleting
+    const resolvedPreds = predictions.filter(p => p.points_result !== null)
+    for (const p of resolvedPreds) {
+      const { data: profile } = await supabase.from('profiles').select('total_points').eq('id', p.user_id).single()
+      if (profile) {
+        await supabase.from('profiles').update({ total_points: profile.total_points - p.points_result }).eq('id', p.user_id)
+      }
+    }
+
     const { error: predErr } = await supabase.from('predictions').delete().eq('question_id', id)
     if (predErr) { console.error(predErr); setDeleting(false); return }
     const { error: qErr } = await supabase.from('questions').delete().eq('id', id)
