@@ -14,15 +14,25 @@ function formatDate(dateStr) {
 
 export default function Questions() {
   const [questions, setQuestions] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filterCategoryId, setFilterCategoryId] = useState('all')
   const { user } = useAuth()
 
-  useEffect(() => { fetchQuestions() }, [])
+  useEffect(() => {
+    fetchCategories()
+    fetchQuestions()
+  }, [])
+
+  async function fetchCategories() {
+    const { data } = await supabase.from('categories').select('*').order('name')
+    setCategories(data || [])
+  }
 
   async function fetchQuestions() {
     const { data } = await supabase
       .from('questions')
-      .select(`*, question_options(id, label, odds, order_index), predictions(id, user_id, selected_option, stake, points_result)`)
+      .select(`*, categories(id, name), question_options(id, label, odds, order_index), predictions(id, user_id, selected_option, stake, points_result)`)
       .order('created_at', { ascending: false })
     setQuestions(data || [])
     setLoading(false)
@@ -36,9 +46,9 @@ export default function Questions() {
     return q.lock_date && new Date() > new Date(q.lock_date)
   }
 
-  function getCorrectLabel(q) {
-    return q.question_options?.find(o => o.id === q.correct_option)?.label
-  }
+  const displayed = filterCategoryId === 'all'
+    ? questions
+    : questions.filter(q => q.category_id === filterCategoryId)
 
   if (loading) return <div className="page-wrap"><div className="loading-text mono">Yükleniyor...</div></div>
 
@@ -52,14 +62,33 @@ export default function Questions() {
         {isAdmin(user) && <Link to="/create" className="btn-primary">+ Yeni Soru</Link>}
       </div>
 
-      {questions.length === 0 ? (
+      {/* Category filter tabs */}
+      <div className="questions-tabs">
+        <button className={`q-tab ${filterCategoryId === 'all' ? 'active' : ''}`} onClick={() => setFilterCategoryId('all')}>
+          Tümü <span className="q-tab-count">{questions.length}</span>
+        </button>
+        {categories.map(cat => {
+          const count = questions.filter(q => q.category_id === cat.id).length
+          return (
+            <button
+              key={cat.id}
+              className={`q-tab ${filterCategoryId === cat.id ? 'active' : ''}`}
+              onClick={() => setFilterCategoryId(cat.id)}
+            >
+              {cat.name} <span className="q-tab-count">{count}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {displayed.length === 0 ? (
         <div className="empty-state">
           <span className="empty-icon">⬡</span>
-          <p>Henüz soru yok.</p>
+          <p>Bu kategoride henüz soru yok.</p>
         </div>
       ) : (
         <div className="questions-list">
-          {questions.map(q => {
+          {displayed.map(q => {
             const userPred = getUserPrediction(q)
             const predCount = q.predictions?.length || 0
             const locked = isLocked(q)
@@ -68,7 +97,7 @@ export default function Questions() {
               <Link to={`/question/${q.id}`} key={q.id} className="question-card">
                 <div className="qcard-top">
                   <div className="qcard-meta">
-                    {q.category && <span className="qcard-category">{q.category}</span>}
+                    {q.categories?.name && <span className="qcard-category">{q.categories.name}</span>}
                     <span className={`qcard-status ${q.is_resolved ? 'resolved' : locked ? 'locked' : 'open'}`}>
                       {q.is_resolved ? '✓ Sonuçlandı' : locked ? '🔒 Kilitlendi' : '● Açık'}
                     </span>
@@ -85,7 +114,7 @@ export default function Questions() {
                 <h3 className="qcard-question">{q.question}</h3>
 
                 <div className="qcard-options">
-                  {sortedOptions.map((opt, i) => (
+                  {sortedOptions.map(opt => (
                     <span key={opt.id} className={`qcard-option ${q.is_resolved && q.correct_option === opt.id ? 'correct' : ''}`}>
                       {opt.label} <span className="qcard-odds mono">{opt.odds}×</span>
                     </span>

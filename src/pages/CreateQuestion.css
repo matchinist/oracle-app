@@ -153,3 +153,34 @@
   margin-bottom: 10px;
 }
 .add-option-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.category-select-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.category-select-row .input-field { flex: 1; }
+
+.add-category-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.add-category-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.new-category-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.new-category-row .input-field { flex: 1; }

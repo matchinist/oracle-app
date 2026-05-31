@@ -38,7 +38,7 @@ export default function QuestionDetail() {
   async function fetchData() {
     const { data: q } = await supabase
       .from('questions')
-      .select(`*, profiles(username)`)
+      .select(`*, profiles(username), categories(name)`)
       .eq('id', id)
       .single()
 
@@ -133,7 +133,7 @@ export default function QuestionDetail() {
       <div className="qd-card card">
         <div className="qd-top">
           <div className="qd-meta">
-            {question.category && <span className="qd-category">{question.category}</span>}
+            {question.categories?.name && <span className="qd-category">{question.categories.name}</span>}
             <span className={`qcard-status ${question.is_resolved ? 'resolved' : isLocked ? 'locked' : 'open'}`}>
               {question.is_resolved ? '✓ Sonuçlandı' : isLocked ? '🔒 Kilitlendi' : '● Açık'}
             </span>

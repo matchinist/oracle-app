@@ -1,22 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/AuthContext'
 import { isAdmin } from '../lib/admin'
 import './CreateQuestion.css'
 
-const CATEGORIES = [
-  { value: 'spor', label: '⚽ Spor' },
-  { value: 'politika', label: '🏛️ Politika' },
-  { value: 'ekonomi', label: '📈 Ekonomi' },
-  { value: 'eglence', label: '🎬 Eğlence' },
-  { value: 'teknoloji', label: '💻 Teknoloji' },
-  { value: 'diger', label: '🌐 Diğer' },
-]
-
 export default function CreateQuestion() {
   const [question, setQuestion] = useState('')
-  const [category, setCategory] = useState('')
+  const [categoryId, setCategoryId] = useState('')
+  const [categories, setCategories] = useState([])
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [showNewCategory, setShowNewCategory] = useState(false)
+  const [addingCategory, setAddingCategory] = useState(false)
   const [lockDate, setLockDate] = useState('')
   const [options, setOptions] = useState([
     { label: '', odds: '' },
@@ -28,6 +23,30 @@ export default function CreateQuestion() {
   const navigate = useNavigate()
 
   const minDate = new Date(Date.now() + 5 * 60 * 1000).toISOString().slice(0, 16)
+
+  useEffect(() => { fetchCategories() }, [])
+
+  async function fetchCategories() {
+    const { data } = await supabase.from('categories').select('*').order('name')
+    setCategories(data || [])
+  }
+
+  async function handleAddCategory() {
+    if (!newCategoryName.trim()) return
+    setAddingCategory(true)
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({ name: newCategoryName.trim(), created_by: user.id })
+      .select()
+      .single()
+    if (!error) {
+      await fetchCategories()
+      setCategoryId(data.id)
+      setNewCategoryName('')
+      setShowNewCategory(false)
+    }
+    setAddingCategory(false)
+  }
 
   if (!isAdmin(user)) {
     return (
@@ -60,7 +79,7 @@ export default function CreateQuestion() {
     setError('')
 
     if (!question.trim()) { setError('Soru alanı zorunludur.'); return }
-    if (!category) { setError('Lütfen bir kategori seçin.'); return }
+    if (!categoryId) { setError('Lütfen bir kategori seçin.'); return }
     if (!lockDate) { setError('Lütfen bir kilit tarihi belirleyin.'); return }
 
     for (let i = 0; i < options.length; i++) {
@@ -75,7 +94,7 @@ export default function CreateQuestion() {
       .from('questions')
       .insert({
         question: question.trim(),
-        category,
+        category_id: categoryId,
         lock_date: new Date(lockDate).toISOString(),
         creator_id: user.id
       })
@@ -114,15 +133,36 @@ export default function CreateQuestion() {
 
           <div className="form-group">
             <label className="label">Kategori</label>
-            <div className="category-grid">
-              {CATEGORIES.map(cat => (
-                <button key={cat.value} type="button"
-                  className={`category-btn ${category === cat.value ? 'active' : ''}`}
-                  onClick={() => setCategory(cat.value)}>
-                  {cat.label}
-                </button>
-              ))}
+            <div className="category-select-row">
+              <select
+                className="input-field"
+                value={categoryId}
+                onChange={e => setCategoryId(e.target.value)}
+              >
+                <option value="">— Kategori seçin —</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              <button type="button" className="add-category-btn" onClick={() => setShowNewCategory(v => !v)}>
+                {showNewCategory ? '✕' : '+ Yeni'}
+              </button>
             </div>
+            {showNewCategory && (
+              <div className="new-category-row">
+                <input
+                  className="input-field"
+                  type="text"
+                  placeholder="Kategori adı (örn. Basketbol)"
+                  value={newCategoryName}
+                  onChange={e => setNewCategoryName(e.target.value)}
+                  maxLength={40}
+                />
+                <button type="button" className="btn-primary" style={{padding:'10px 18px', fontSize:'0.82rem'}} onClick={handleAddCategory} disabled={addingCategory || !newCategoryName.trim()}>
+                  {addingCategory ? '...' : 'Ekle'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
