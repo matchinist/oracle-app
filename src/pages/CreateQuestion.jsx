@@ -31,21 +31,15 @@ export default function CreateQuestion() {
     setCategories(data || [])
   }
 
+  const [pendingCategory, setPendingCategory] = useState(null) // { name } — not yet saved to DB
+
   async function handleAddCategory() {
     if (!newCategoryName.trim()) return
-    setAddingCategory(true)
-    const { data, error } = await supabase
-      .from('categories')
-      .insert({ name: newCategoryName.trim(), created_by: user.id })
-      .select()
-      .single()
-    if (!error) {
-      await fetchCategories()
-      setCategoryId(data.id)
-      setNewCategoryName('')
-      setShowNewCategory(false)
-    }
-    setAddingCategory(false)
+    // Just store locally, don't save to DB yet
+    setPendingCategory({ name: newCategoryName.trim() })
+    setCategoryId('__pending__')
+    setNewCategoryName('')
+    setShowNewCategory(false)
   }
 
   if (!isAdmin(user)) {
@@ -90,11 +84,23 @@ export default function CreateQuestion() {
 
     setLoading(true)
 
+    // If new category is pending, save it now
+    let resolvedCategoryId = categoryId
+    if (categoryId === '__pending__' && pendingCategory) {
+      const { data: newCat, error: catErr } = await supabase
+        .from('categories')
+        .insert({ name: pendingCategory.name, created_by: user.id })
+        .select()
+        .single()
+      if (catErr) { setError(catErr.message); setLoading(false); return }
+      resolvedCategoryId = newCat.id
+    }
+
     const { data: q, error: qErr } = await supabase
       .from('questions')
       .insert({
         question: question.trim(),
-        category_id: categoryId,
+        category_id: resolvedCategoryId,
         lock_date: new Date(lockDate).toISOString(),
         creator_id: user.id
       })
@@ -137,12 +143,15 @@ export default function CreateQuestion() {
               <select
                 className="input-field"
                 value={categoryId}
-                onChange={e => setCategoryId(e.target.value)}
+                onChange={e => { setCategoryId(e.target.value); if (e.target.value !== '__pending__') setPendingCategory(null) }}
               >
                 <option value="">— Kategori seçin —</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
+                {pendingCategory && (
+                  <option value="__pending__">{pendingCategory.name} (yeni)</option>
+                )}
               </select>
               <button type="button" className="add-category-btn" onClick={() => setShowNewCategory(v => !v)}>
                 {showNewCategory ? '✕' : '+ Yeni'}
@@ -158,8 +167,8 @@ export default function CreateQuestion() {
                   onChange={e => setNewCategoryName(e.target.value)}
                   maxLength={40}
                 />
-                <button type="button" className="btn-primary" style={{padding:'10px 18px', fontSize:'0.82rem'}} onClick={handleAddCategory} disabled={addingCategory || !newCategoryName.trim()}>
-                  {addingCategory ? '...' : 'Ekle'}
+                <button type="button" className="btn-primary" style={{padding:'10px 18px', fontSize:'0.82rem'}} onClick={handleAddCategory} disabled={!newCategoryName.trim()}>
+                  Ekle
                 </button>
               </div>
             )}
